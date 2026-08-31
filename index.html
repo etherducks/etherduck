@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>etherDuck — an onchain agent flying a fleet of MicroDucks</title>
+<style>
+  :root {
+    --ink: #0E1B24;
+    --panel: #152834;
+    --panel-line: #24404E;
+    --text: #DCEFF2;
+    --muted: #7FA1AC;
+    --amber: #FFB454;
+    --green: #6FCF97;
+  }
+
+  * { box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    margin: 0;
+    background: var(--ink);
+    color: var(--text);
+    font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 16px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .mono {
+    font-family: 'IBM Plex Mono', ui-monospace, 'SF Mono', Consolas, monospace;
+  }
+
+  a { color: var(--amber); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  a:focus-visible, button:focus-visible {
+    outline: 2px solid var(--amber);
+    outline-offset: 3px;
+  }
+
+  .wrap {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  /* background grid, faint, like graph paper on a chart table */
+  .chart-grid {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background-image:
+      linear-gradient(var(--panel-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--panel-line) 1px, transparent 1px);
+    background-size: 48px 48px;
+    opacity: 0.14;
+  }
+
+  /* ---------- header ---------- */
+
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: rgba(14, 27, 36, 0.88);
+    backdrop-filter: blur(6px);
+    border-bottom: 1px solid var(--panel-line);
+  }
+
+  .header-inner {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 600;
+    font-size: 15px;
+    letter-spacing: 0.02em;
+    color: var(--text);
+  }
+
+  .brand svg { display: block; }
+
+  .header-links {
+    display: flex;
+    gap: 20px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+  }
+
+  .header-links a { color: var(--muted); }
+  .header-links a:hover { color: var(--amber); }
+
+  /* ---------- hero ---------- */
+
+  .hero {
+    padding: 88px 0 64px;
+    text-align: center;
+  }
+
+  .hero-tag {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    color: var(--green);
+    margin: 0 0 22px;
+  }
+
+  .hero-tag::before {
+    content: "● ";
+  }
+
+  h1 {
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 600;
+    font-size: clamp(32px, 6vw, 52px);
+    line-height: 1.12;
+    letter-spacing: -0.01em;
+    margin: 0 0 20px;
+  }
+
+  h1 .quack { color: var(--amber); }
+
+  .hero-sub {
+    max-width: 480px;
+    margin: 0 auto 40px;
+    color: var(--muted);
+    font-size: 17px;
+  }
+
+  .hero-actions {
+    display: flex;
+    gap: 14px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 14px;
+    padding: 12px 22px;
+    border-radius: 3px;
+    border: 1px solid var(--panel-line);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+
+  .btn-primary {
+    background: var(--amber);
+    color: #17130B;
+    border-color: var(--amber);
+    font-weight: 600;
+  }
+  .btn-primary:hover { background: #ffc274; text-decoration: none; }
+
+  .btn-ghost {
+    color: var(--text);
+    background: transparent;
+  }
+  .btn-ghost:hover { border-color: var(--amber); text-decoration: none; }
+
+  /* ---------- trail animation ---------- */
+
+  .trail-stage {
+    margin: 56px auto 0;
+    max-width: 560px;
+    border: 1px solid var(--panel-line);
+    background: var(--panel);
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .trail-stage svg { display: block; width: 100%; height: auto; }
+
+  .trail-readout {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 16px;
+    border-top: 1px solid var(--panel-line);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .trail-readout span.v { color: var(--green); }
+
+  /* ---------- sections ---------- */
+
+  section { padding: 64px 0; border-top: 1px solid var(--panel-line); }
+
+  .section-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    color: var(--amber);
+    margin: 0 0 12px;
+  }
+
+  h2 {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 26px;
+    font-weight: 600;
+    margin: 0 0 20px;
+    max-width: 34ch;
+  }
+
+  section p {
+    max-width: 62ch;
+    color: var(--muted);
+  }
+
+  section p strong { color: var(--text); font-weight: 600; }
+
+  /* ---------- flight log ---------- */
+
+  .log-entry {
+    border-left: 2px solid var(--panel-line);
+    padding: 4px 0 4px 20px;
+    margin-bottom: 28px;
+    position: relative;
+  }
+
+  .log-entry::before {
+    content: attr(data-entry);
+    position: absolute;
+    left: -1px;
+    top: 0;
+    transform: translateX(-50%);
+    background: var(--ink);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--amber);
+    padding: 2px 6px;
+    border: 1px solid var(--panel-line);
+    border-radius: 3px;
+  }
+
+  .log-entry h3 {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 16px;
+    margin: 8px 0 8px;
+    color: var(--text);
+  }
+
+  .log-entry p {
+    margin: 0;
+    font-size: 15px;
+  }
+
+  /* ---------- instrument panels (contract grid) ---------- */
+
+  .panel-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-top: 28px;
+  }
+
+  @media (max-width: 560px) {
+    .panel-grid { grid-template-columns: 1fr; }
+  }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--panel-line);
+    border-radius: 3px;
+    padding: 18px;
+    position: relative;
+  }
+
+  .panel::before,
+  .panel::after {
+    content: "";
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border-color: var(--amber);
+    opacity: 0.6;
+  }
+  .panel::before { top: 6px; left: 6px; border-top: 1px solid; border-left: 1px solid; }
+  .panel::after { bottom: 6px; right: 6px; border-bottom: 1px solid; border-right: 1px solid; }
+
+  .panel .panel-id {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+
+  .panel h3 {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 15px;
+    margin: 0 0 8px;
+    color: var(--text);
+  }
+
+  .panel p {
+    font-size: 13.5px;
+    margin: 0;
+    color: var(--muted);
+  }
+
+  /* ---------- token facts ---------- */
+
+  .facts {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--panel-line);
+    border: 1px solid var(--panel-line);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: 28px;
+  }
+
+  @media (max-width: 560px) {
+    .facts { grid-template-columns: 1fr 1fr; }
+  }
+
+  .fact {
+    background: var(--panel);
+    padding: 20px 16px;
+  }
+
+  .fact .num {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 22px;
+    color: var(--amber);
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  .fact .lbl {
+    font-size: 12.5px;
+    color: var(--muted);
+  }
+
+  /* ---------- footer ---------- */
+
+  footer {
+    border-top: 1px solid var(--panel-line);
+    padding: 40px 0 56px;
+  }
+
+  .footer-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .footer-links {
+    display: flex;
+    gap: 22px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+  }
+
+  .footer-links a { color: var(--muted); }
+  .footer-links a:hover { color: var(--amber); }
+
+  .footer-note {
+    font-size: 12.5px;
+    color: var(--muted);
+    margin-top: 22px;
+    max-width: 60ch;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .trail-path, .trail-duck { animation: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="chart-grid" aria-hidden="true"></div>
+
+<header>
+  <div class="header-inner">
+    <div class="brand">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M4 15c0-5 4-9 9-9 3 0 5 2 5 4 0 1-1 2-2 2h-1" stroke="#FFB454" stroke-width="1.6" stroke-linecap="round"/>
+        <circle cx="16" cy="8" r="1.1" fill="#FFB454"/>
+        <path d="M4 15c0 2 2 4 6 4 5 0 8-3 8-6" stroke="#DCEFF2" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
+      etherDuck
+    </div>
+    <nav class="header-links">
+      <a href="#how">How it works</a>
+      <a href="#fleet">Fleet systems</a>
+      <a href="#token">$QUACK</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="hero" style="border-top: none; padding-top: 88px;">
+    <div class="wrap">
+      <p class="hero-tag">LIVE ON ETHEREUM · UNISWAP V4 HOOK</p>
+      <h1>An onchain agent<br>flying a fleet of <span class="quack">MicroDucks</span></h1>
+      <p class="hero-sub">
+        etherDuck lives inside a Uniswap v4 hook. Every trade against the
+        $QUACK pool is a heartbeat — the agent dispatches a command,
+        drains a battery, and logs a step, all in the same block a swap lands in.
+      </p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="https://x.com/etherduck_eth" target="_blank" rel="noopener">Follow on X</a>
+        <a class="btn btn-ghost" href="#how">Read the flight log</a>
+      </div>
+
+      <div class="trail-stage">
+        <svg viewBox="0 0 560 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Animated diagram of a duck robot tracing a waypoint path">
+          <line x1="0" y1="55" x2="560" y2="55" stroke="#24404E" stroke-width="1"/>
+          <line x1="0" y1="110" x2="560" y2="110" stroke="#24404E" stroke-width="1"/>
+          <line x1="0" y1="165" x2="560" y2="165" stroke="#24404E" stroke-width="1"/>
+          <path class="trail-path" d="M40,150 L120,90 L210,130 L300,60 L390,100 L480,50 L520,80"
+                fill="none" stroke="#6FCF97" stroke-width="1.6" stroke-dasharray="4 4" opacity="0.55"/>
+          <g class="trail-duck">
+            <animateMotion dur="7s" repeatCount="indefinite"
+              path="M40,150 L120,90 L210,130 L300,60 L390,100 L480,50 L520,80" />
+            <circle r="9" fill="#152834" stroke="#FFB454" stroke-width="1.5"/>
+            <path d="M-4,0 Q0,-5 5,-1" stroke="#FFB454" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+            <circle cx="2" cy="-1.5" r="1" fill="#FFB454"/>
+          </g>
+        </svg>
+        <div class="trail-readout">
+          <span>DUCK #04 · TRAIL LOG</span>
+          <span class="v">CHARGE 82%</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="how">
+    <div class="wrap">
+      <p class="section-label">FLIGHT LOG</p>
+      <h2>What actually happens when someone trades $QUACK</h2>
+
+      <div class="log-entry" data-entry="001">
+        <h3>The hook picks up the trade</h3>
+        <p>etherDuck's hook attaches to the $QUACK pool on Uniswap v4. It doesn't sit beside the pool watching from a distance — it runs inside the swap itself, the moment a trade settles.</p>
+      </div>
+
+      <div class="log-entry" data-entry="002">
+        <h3>A duck gets the order</h3>
+        <p>The hook rotates through the registered fleet and issues the next duck a command sized off the trade. No duck sits idle forever while the swap volume goes elsewhere.</p>
+      </div>
+
+      <div class="log-entry" data-entry="003">
+        <h3>The battery pays for it</h3>
+        <p>Executing that command drains the duck's charge by the trade's size. Charge also trickles back on its own over time, whether or not the duck is doing anything — the two forces run against each other continuously.</p>
+      </div>
+
+      <div class="log-entry" data-entry="004">
+        <h3>The step gets logged</h3>
+        <p>A new coordinate lands on the duck's trail, with the straight-line distance from its last position calculated and added to a running odometer. Every duck's whole path is readable onchain, waypoint by waypoint.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="fleet">
+    <div class="wrap">
+      <p class="section-label">FLEET SYSTEMS</p>
+      <h2>Four contracts, four jobs, no human in the loop</h2>
+      <p>Each of etherDuck's supporting systems does exactly one thing for the fleet. None of them touch $QUACK's balances directly — they're mapped alongside the token, not built into it.</p>
+
+      <div class="panel-grid">
+        <div class="panel">
+          <div class="panel-id">SYS · 01</div>
+          <h3>Fleet Roster</h3>
+          <p>Registers every MicroDuck and tracks its status — idle, active, charging, offline, or retired for good.</p>
+        </div>
+        <div class="panel">
+          <div class="panel-id">SYS · 02</div>
+          <h3>Command Dispatch</h3>
+          <p>A first-in-first-out order queue per duck. Commands land at the back and execute strictly in the order they arrived.</p>
+        </div>
+        <div class="panel">
+          <div class="panel-id">SYS · 03</div>
+          <h3>Battery Sim</h3>
+          <p>Charge drains per action and recharges per second, floored at zero and capped at capacity — never runs negative, never overflows.</p>
+        </div>
+        <div class="panel">
+          <div class="panel-id">SYS · 04</div>
+          <h3>Waypoint Trail</h3>
+          <p>Every step is a signed (x, y) coordinate. Distance between steps and total distance traveled are both computed onchain.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="token">
+    <div class="wrap">
+      <p class="section-label">$QUACK</p>
+      <h2>A fixed-supply currency with nobody holding the keys</h2>
+      <p>$QUACK has no mint function and no owner. The entire supply was set once at deployment, and it only ever moves in one direction — down, through a plain public burn.</p>
+
+      <div class="facts">
+        <div class="fact">
+          <span class="num">555M</span>
+          <span class="lbl">genesis supply</span>
+        </div>
+        <div class="fact">
+          <span class="num">0</span>
+          <span class="lbl">mint functions</span>
+        </div>
+        <div class="fact">
+          <span class="num">Ethereum</span>
+          <span class="lbl">network</span>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="footer-row">
+      <div class="brand mono">etherDuck</div>
+      <div class="footer-links">
+        <a href="https://x.com/etherduck_eth" target="_blank" rel="noopener">X / Twitter</a>
+        <a href="#how">Flight log</a>
+        <a href="#fleet">Fleet systems</a>
+      </div>
+    </div>
+    <p class="footer-note">
+      etherDuck is an experimental onchain agent. $QUACK carries no financial promises, and nothing on this page is investment advice. Read the contracts before you trust them with anything.
+    </p>
+  </div>
+</footer>
+
+</body>
+</html>
