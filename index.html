@@ -3,499 +3,535 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>etherDuck — an onchain agent flying a fleet of MicroDucks</title>
+<title>etherDuck</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
-    --ink: #0E1B24;
-    --panel: #152834;
-    --panel-line: #24404E;
-    --text: #DCEFF2;
-    --muted: #7FA1AC;
-    --amber: #FFB454;
-    --green: #6FCF97;
+    --paper: #E8E5DC;
+    --paper-2: #DEDACE;
+    --card: #F3F1E9;
+    --ink: #1A1815;
+    --ink-soft: #58544C;
+    --line: #C9C4B4;
+    --violet: #5B4FE0;
+    --violet-deep: #3D34A8;
+    --gold: #B98A22;
+    --gold-bright: #E8B233;
   }
 
   * { box-sizing: border-box; }
-
   html { scroll-behavior: smooth; }
 
   body {
     margin: 0;
-    background: var(--ink);
-    color: var(--text);
-    font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Inter', -apple-system, sans-serif;
     font-size: 16px;
-    line-height: 1.55;
+    line-height: 1.6;
     -webkit-font-smoothing: antialiased;
+    position: relative;
+    overflow-x: hidden;
   }
 
-  .mono {
-    font-family: 'IBM Plex Mono', ui-monospace, 'SF Mono', Consolas, monospace;
+  .grain-veil {
+    position: fixed; inset: 0; z-index: -1;
+    background-image: radial-gradient(circle at 1px 1px, rgba(26,24,21,0.055) 1px, transparent 0);
+    background-size: 3px 3px;
+    pointer-events: none;
   }
 
-  a { color: var(--amber); text-decoration: none; }
+  .serif { font-family: 'Fraunces', serif; }
+  h1, h2 { font-family: 'Fraunces', serif; font-weight: 600; letter-spacing: -0.01em; }
+
+  a { color: var(--violet-deep); text-decoration: none; }
   a:hover { text-decoration: underline; }
-  a:focus-visible, button:focus-visible {
-    outline: 2px solid var(--amber);
-    outline-offset: 3px;
-  }
+  a:focus-visible, button:focus-visible { outline: 2px solid var(--violet); outline-offset: 3px; }
 
-  .wrap {
-    max-width: 720px;
-    margin: 0 auto;
-    padding: 0 24px;
-  }
-
-  /* background grid, faint, like graph paper on a chart table */
-  .chart-grid {
-    position: fixed;
-    inset: 0;
-    z-index: -1;
-    background-image:
-      linear-gradient(var(--panel-line) 1px, transparent 1px),
-      linear-gradient(90deg, var(--panel-line) 1px, transparent 1px);
-    background-size: 48px 48px;
-    opacity: 0.14;
-  }
+  .wrap { max-width: 920px; margin: 0 auto; padding: 0 28px; }
 
   /* ---------- header ---------- */
 
   header {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    background: rgba(14, 27, 36, 0.88);
+    border-bottom: 1px solid var(--line);
+    position: sticky; top: 0; z-index: 10;
+    background: rgba(232, 229, 220, 0.92);
     backdrop-filter: blur(6px);
-    border-bottom: 1px solid var(--panel-line);
   }
 
   .header-inner {
-    max-width: 720px;
-    margin: 0 auto;
-    padding: 16px 24px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+    max-width: 920px; margin: 0 auto; padding: 18px 28px;
+    display: flex; align-items: center; justify-content: space-between;
   }
 
-  .brand {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-family: 'IBM Plex Mono', monospace;
+  .brand { display: flex; align-items: center; gap: 10px; font-family: 'Fraunces', serif; font-weight: 600; font-size: 18px; }
+  .brand-coin { width: 26px; height: 26px; border-radius: 50%; overflow: hidden; border: 1.5px solid var(--ink); flex-shrink: 0; }
+  .brand-coin img { width: 100%; height: 100%; object-fit: cover; filter: grayscale(1) contrast(1.05); }
+
+  .header-links { display: flex; align-items: center; gap: 30px; font-size: 14px; color: var(--ink-soft); }
+  .header-links a { color: var(--ink-soft); }
+  .header-links a:hover { color: var(--violet-deep); }
+
+  .header-cta {
     font-weight: 600;
-    font-size: 15px;
-    letter-spacing: 0.02em;
-    color: var(--text);
+    color: var(--ink) !important;
+    border-bottom: 2px solid var(--gold-bright);
+    padding-bottom: 1px;
   }
-
-  .brand svg { display: block; }
-
-  .header-links {
-    display: flex;
-    gap: 20px;
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 13px;
-  }
-
-  .header-links a { color: var(--muted); }
-  .header-links a:hover { color: var(--amber); }
+  .header-cta:hover { text-decoration: none; border-color: var(--violet); }
 
   /* ---------- hero ---------- */
 
-  .hero {
-    padding: 88px 0 64px;
-    text-align: center;
+  .hero { padding: 84px 0 40px; position: relative; }
+
+  .hero-ring {
+    position: absolute;
+    top: 10px; right: -220px;
+    width: 640px; height: 640px;
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    z-index: -1;
+  }
+  .hero-ring::before {
+    content: "";
+    position: absolute; inset: 46px;
+    border: 1px solid var(--line);
+    border-radius: 50%;
   }
 
-  .hero-tag {
-    font-family: 'IBM Plex Mono', monospace;
+  .plate-grid {
+    display: grid;
+    grid-template-columns: 1.08fr 0.92fr;
+    gap: 56px;
+    align-items: center;
+  }
+
+  @media (max-width: 760px) {
+    .plate-grid { grid-template-columns: 1fr; gap: 44px; }
+    .coin-stage { order: -1; }
+  }
+
+  .catalog-num {
+    display: flex; align-items: center; gap: 10px;
+    font-family: 'Fraunces', serif;
     font-size: 13px;
-    color: var(--green);
+    color: var(--gold);
+    letter-spacing: 0.02em;
+    margin: 0 0 22px;
+  }
+  .catalog-num::before { content: ""; width: 26px; height: 1px; background: var(--gold-bright); display: inline-block; }
+
+  h1 {
+    font-size: clamp(32px, 4.4vw, 45px);
+    line-height: 1.14;
     margin: 0 0 22px;
   }
 
-  .hero-tag::before {
-    content: "● ";
-  }
-
-  h1 {
-    font-family: 'IBM Plex Mono', monospace;
-    font-weight: 600;
-    font-size: clamp(32px, 6vw, 52px);
-    line-height: 1.12;
-    letter-spacing: -0.01em;
-    margin: 0 0 20px;
-  }
-
-  h1 .quack { color: var(--amber); }
+  h1 em { font-style: italic; color: var(--violet-deep); }
 
   .hero-sub {
-    max-width: 480px;
-    margin: 0 auto 40px;
-    color: var(--muted);
-    font-size: 17px;
+    max-width: 420px;
+    color: var(--ink-soft);
+    font-size: 16.5px;
+    margin: 0 0 32px;
   }
 
-  .hero-actions {
-    display: flex;
-    gap: 14px;
-    justify-content: center;
-    flex-wrap: wrap;
-  }
+  .hero-actions { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 40px; }
 
   .btn {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 14px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 14.5px;
     padding: 12px 22px;
     border-radius: 3px;
-    border: 1px solid var(--panel-line);
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    transition: border-color 0.15s ease, background 0.15s ease;
+    transition: transform 0.12s ease, background 0.12s ease, border-color 0.12s ease;
   }
 
-  .btn-primary {
-    background: var(--amber);
-    color: #17130B;
-    border-color: var(--amber);
-    font-weight: 600;
+  .btn-primary { background: var(--ink); color: var(--paper); }
+  .btn-primary:hover { background: var(--violet-deep); text-decoration: none; }
+
+  .btn-ghost { background: transparent; color: var(--ink); border: 1px solid var(--ink); }
+  .btn-ghost:hover { border-color: var(--gold); color: var(--gold); text-decoration: none; }
+
+  .spec-row { display: flex; gap: 36px; flex-wrap: wrap; padding-top: 28px; border-top: 1px solid var(--line); }
+  .spec-item .k { font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-soft); display: block; margin-bottom: 5px; }
+  .spec-item .v { font-family: 'Fraunces', serif; font-size: 17px; }
+
+  /* coin stage */
+
+  .coin-stage { display: flex; flex-direction: column; align-items: center; }
+
+  .coin-wrap { position: relative; width: 260px; height: 260px; }
+
+  .coin-shadow {
+    position: absolute;
+    bottom: -18px; left: 50%;
+    transform: translateX(-50%);
+    width: 190px; height: 22px;
+    background: radial-gradient(ellipse, rgba(26,24,21,0.22), transparent 70%);
   }
-  .btn-primary:hover { background: #ffc274; text-decoration: none; }
 
-  .btn-ghost {
-    color: var(--text);
-    background: transparent;
+  .coin-edge {
+    position: absolute; inset: 0;
+    border-radius: 50%;
+    background: linear-gradient(155deg, #D9BB63, #8C6B1F 45%, #EFD98A 62%, #7A5C18);
+    padding: 7px;
   }
-  .btn-ghost:hover { border-color: var(--amber); text-decoration: none; }
 
-  /* ---------- trail animation ---------- */
-
-  .trail-stage {
-    margin: 56px auto 0;
-    max-width: 560px;
-    border: 1px solid var(--panel-line);
-    background: var(--panel);
-    border-radius: 4px;
-    position: relative;
+  .coin-face {
+    width: 100%; height: 100%;
+    border-radius: 50%;
     overflow: hidden;
+    background: #D8D4C6;
+    border: 1px solid rgba(0,0,0,0.15);
+    position: relative;
   }
 
-  .trail-stage svg { display: block; width: 100%; height: auto; }
+  .coin-face img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    object-position: 42% 40%;
+    transform: scale(1.5);
+    filter: grayscale(1) contrast(1.08) brightness(1.03);
+    display: block;
+    mix-blend-mode: multiply;
+  }
 
-  .trail-readout {
-    display: flex;
-    justify-content: space-between;
-    padding: 10px 16px;
-    border-top: 1px solid var(--panel-line);
-    font-family: 'IBM Plex Mono', monospace;
+  .coin-tint {
+    position: absolute; inset: 0;
+    background: linear-gradient(160deg, rgba(91,79,224,0.2), rgba(232,178,51,0.16));
+    mix-blend-mode: multiply;
+    pointer-events: none;
+  }
+
+  .coin-rim-text {
+    position: absolute; inset: -14px;
+  }
+
+  .coin-caption {
+    margin-top: 22px;
     font-size: 12px;
-    color: var(--muted);
+    color: var(--ink-soft);
+    font-style: italic;
+    display: flex;
+    gap: 18px;
   }
-
-  .trail-readout span.v { color: var(--green); }
 
   /* ---------- sections ---------- */
 
-  section { padding: 64px 0; border-top: 1px solid var(--panel-line); }
+  section { padding: 68px 0; border-top: 1px solid var(--line); }
 
-  .section-label {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 13px;
-    color: var(--amber);
-    margin: 0 0 12px;
-  }
+  .kicker { font-size: 12.5px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--gold); margin: 0 0 14px; font-weight: 600; }
 
-  h2 {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 26px;
-    font-weight: 600;
-    margin: 0 0 20px;
-    max-width: 34ch;
-  }
+  h2 { font-size: 28px; margin: 0 0 16px; max-width: 28ch; }
 
-  section p {
-    max-width: 62ch;
-    color: var(--muted);
-  }
+  section > .wrap > .lede { color: var(--ink-soft); max-width: 54ch; margin: 0 0 8px; font-size: 15.5px; }
 
-  section p strong { color: var(--text); font-weight: 600; }
+  /* provenance */
 
-  /* ---------- flight log ---------- */
+  .provenance { margin-top: 44px; display: grid; grid-template-columns: 1fr 1fr; gap: 0 40px; }
 
-  .log-entry {
-    border-left: 2px solid var(--panel-line);
-    padding: 4px 0 4px 20px;
-    margin-bottom: 28px;
-    position: relative;
-  }
+  @media (max-width: 700px) { .provenance { grid-template-columns: 1fr; } }
 
-  .log-entry::before {
-    content: attr(data-entry);
-    position: absolute;
-    left: -1px;
-    top: 0;
-    transform: translateX(-50%);
-    background: var(--ink);
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
-    color: var(--amber);
-    padding: 2px 6px;
-    border: 1px solid var(--panel-line);
-    border-radius: 3px;
-  }
-
-  .log-entry h3 {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 16px;
-    margin: 8px 0 8px;
-    color: var(--text);
-  }
-
-  .log-entry p {
-    margin: 0;
-    font-size: 15px;
-  }
-
-  /* ---------- instrument panels (contract grid) ---------- */
-
-  .panel-grid {
+  .prov-entry {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 14px;
-    margin-top: 28px;
+    grid-template-columns: 56px 1fr;
+    gap: 18px;
+    padding: 22px 0;
+    border-top: 1px solid var(--line);
   }
 
-  @media (max-width: 560px) {
-    .panel-grid { grid-template-columns: 1fr; }
-  }
+  .prov-num { font-family: 'Fraunces', serif; font-size: 22px; color: var(--line); }
+  .prov-entry h3 { font-family: 'Fraunces', serif; font-size: 17px; margin: 0 0 6px; }
+  .prov-entry p { font-size: 14px; color: var(--ink-soft); margin: 0; max-width: 42ch; }
 
-  .panel {
-    background: var(--panel);
-    border: 1px solid var(--panel-line);
-    border-radius: 3px;
-    padding: 18px;
-    position: relative;
-  }
+  /* fleet specimens */
 
-  .panel::before,
-  .panel::after {
-    content: "";
-    position: absolute;
-    width: 8px;
-    height: 8px;
-    border-color: var(--amber);
-    opacity: 0.6;
-  }
-  .panel::before { top: 6px; left: 6px; border-top: 1px solid; border-left: 1px solid; }
-  .panel::after { bottom: 6px; right: 6px; border-bottom: 1px solid; border-right: 1px solid; }
-
-  .panel .panel-id {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
-    color: var(--muted);
-    margin-bottom: 10px;
-  }
-
-  .panel h3 {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 15px;
-    margin: 0 0 8px;
-    color: var(--text);
-  }
-
-  .panel p {
-    font-size: 13.5px;
-    margin: 0;
-    color: var(--muted);
-  }
-
-  /* ---------- token facts ---------- */
-
-  .facts {
+  .specimen-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 1px;
-    background: var(--panel-line);
-    border: 1px solid var(--panel-line);
-    border-radius: 4px;
-    overflow: hidden;
-    margin-top: 28px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    margin-top: 40px;
   }
 
-  @media (max-width: 560px) {
-    .facts { grid-template-columns: 1fr 1fr; }
+  @media (max-width: 820px) { .specimen-grid { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 480px) { .specimen-grid { grid-template-columns: 1fr; } }
+
+  .specimen { background: var(--card); padding: 26px 22px; }
+
+  .specimen .tag {
+    display: inline-block;
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--violet-deep);
+    border: 1px solid var(--violet);
+    padding: 3px 8px;
+    margin-bottom: 16px;
   }
 
-  .fact {
-    background: var(--panel);
-    padding: 20px 16px;
-  }
+  .specimen:nth-child(2) .tag, .specimen:nth-child(4) .tag { color: var(--gold); border-color: var(--gold-bright); }
 
-  .fact .num {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 22px;
-    color: var(--amber);
-    display: block;
-    margin-bottom: 4px;
-  }
+  .specimen h3 { font-family: 'Fraunces', serif; font-size: 16px; margin: 0 0 8px; }
+  .specimen p { font-size: 13px; color: var(--ink-soft); margin: 0; line-height: 1.6; }
 
-  .fact .lbl {
-    font-size: 12.5px;
-    color: var(--muted);
-  }
+  /* diagram strip */
 
-  /* ---------- footer ---------- */
-
-  footer {
-    border-top: 1px solid var(--panel-line);
-    padding: 40px 0 56px;
-  }
-
-  .footer-row {
+  .flow-strip {
+    margin-top: 44px;
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    flex-wrap: wrap;
-    gap: 16px;
+    border: 1px solid var(--line);
+    background: var(--card);
+    padding: 30px 24px;
   }
 
-  .footer-links {
-    display: flex;
-    gap: 22px;
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 13px;
+  @media (max-width: 700px) { .flow-strip { flex-direction: column; align-items: stretch; } }
+
+  .flow-node { flex: 1; text-align: center; padding: 0 10px; }
+  .flow-node .fn-label { font-family: 'Fraunces', serif; font-size: 14px; margin-bottom: 4px; }
+  .flow-node .fn-sub { font-size: 11.5px; color: var(--ink-soft); }
+
+  .flow-arrow { flex: 0 0 40px; text-align: center; color: var(--gold); font-size: 18px; }
+
+  @media (max-width: 700px) {
+    .flow-node { padding: 14px 0; }
+    .flow-arrow { transform: rotate(90deg); }
   }
 
-  .footer-links a { color: var(--muted); }
-  .footer-links a:hover { color: var(--amber); }
+  /* token specification table */
 
-  .footer-note {
-    font-size: 12.5px;
-    color: var(--muted);
-    margin-top: 22px;
-    max-width: 60ch;
+  .spec-table-wrap {
+    display: grid;
+    grid-template-columns: 1fr 1.3fr;
+    gap: 48px;
+    margin-top: 40px;
+    align-items: start;
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    .trail-path, .trail-duck { animation: none !important; }
+  @media (max-width: 760px) { .spec-table-wrap { grid-template-columns: 1fr; } }
+
+  .spec-table { border-top: 1px solid var(--line); }
+
+  .spec-table-row {
+    display: grid;
+    grid-template-columns: 150px 1fr;
+    gap: 20px;
+    padding: 15px 0;
+    border-bottom: 1px solid var(--line);
   }
+
+  .spec-table-row .k { font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-soft); padding-top: 2px; }
+  .spec-table-row .v { font-family: 'Fraunces', serif; font-size: 17px; }
+
+  .integrity-note {
+    background: var(--card);
+    border: 1px solid var(--line);
+    padding: 24px;
+  }
+  .integrity-note h3 { font-family: 'Fraunces', serif; font-size: 15px; margin: 0 0 10px; }
+  .integrity-note p { font-size: 13.5px; color: var(--ink-soft); margin: 0; line-height: 1.65; }
+
+  footer { border-top: 1px solid var(--line); padding: 44px 0 60px; }
+
+  .footer-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; }
+  .footer-links { display: flex; gap: 24px; font-size: 14px; }
+  .footer-links a { color: var(--ink-soft); }
+  .footer-links a:hover { color: var(--violet-deep); }
+
+  .footer-note { font-size: 12.5px; color: var(--ink-soft); margin-top: 24px; max-width: 58ch; font-style: italic; }
 </style>
 </head>
 <body>
 
-<div class="chart-grid" aria-hidden="true"></div>
+<div class="grain-veil" aria-hidden="true"></div>
 
 <header>
   <div class="header-inner">
     <div class="brand">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <path d="M4 15c0-5 4-9 9-9 3 0 5 2 5 4 0 1-1 2-2 2h-1" stroke="#FFB454" stroke-width="1.6" stroke-linecap="round"/>
-        <circle cx="16" cy="8" r="1.1" fill="#FFB454"/>
-        <path d="M4 15c0 2 2 4 6 4 5 0 8-3 8-6" stroke="#DCEFF2" stroke-width="1.6" stroke-linecap="round"/>
-      </svg>
+      <span class="brand-coin"><img src="https://pbs.twimg.com/profile_images/2094470799960752128/TFIA0P6X_400x400.jpg" alt=""></span>
       etherDuck
     </div>
     <nav class="header-links">
-      <a href="#how">How it works</a>
-      <a href="#fleet">Fleet systems</a>
-      <a href="#token">$QUACK</a>
+      <a href="#concept">Concept</a>
+      <a href="#how">Provenance</a>
+      <a href="#fleet">Specimens</a>
+      <a href="#token">Specification</a>
+      <a class="header-cta" href="https://x.com/etherduck" target="_blank" rel="noopener">Follow</a>
     </nav>
   </div>
 </header>
 
 <main>
-  <section class="hero" style="border-top: none; padding-top: 88px;">
+  <section class="hero" style="border-top: none;">
+    <div class="hero-ring" aria-hidden="true"></div>
     <div class="wrap">
-      <p class="hero-tag">LIVE ON ETHEREUM · UNISWAP V4 HOOK</p>
-      <h1>An onchain agent<br>flying a fleet of <span class="quack">MicroDucks</span></h1>
-      <p class="hero-sub">
-        etherDuck lives inside a Uniswap v4 hook. Every trade against the
-        $QUACK pool is a heartbeat — the agent dispatches a command,
-        drains a battery, and logs a step, all in the same block a swap lands in.
-      </p>
-      <div class="hero-actions">
-        <a class="btn btn-primary" href="https://x.com/etherduck_eth" target="_blank" rel="noopener">Follow on X</a>
-        <a class="btn btn-ghost" href="#how">Read the flight log</a>
-      </div>
+      <div class="plate-grid">
+        <div class="hero-copy">
+          <p class="catalog-num">EDUCK · specimen no. 001</p>
+          <h1>A duck cast in code, <em>set loose</em> on Ethereum</h1>
+          <p class="hero-sub">
+            etherDuck lives inside a Uniswap v4 hook. Every trade against
+            the pool wakes a MicroDuck robot, spends its charge, and adds
+            one more mark to its trail.
+          </p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="https://x.com/etherduck" target="_blank" rel="noopener">Follow @etherduck</a>
+            <a class="btn btn-ghost" href="#how">Read the provenance</a>
+          </div>
 
-      <div class="trail-stage">
-        <svg viewBox="0 0 560 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Animated diagram of a duck robot tracing a waypoint path">
-          <line x1="0" y1="55" x2="560" y2="55" stroke="#24404E" stroke-width="1"/>
-          <line x1="0" y1="110" x2="560" y2="110" stroke="#24404E" stroke-width="1"/>
-          <line x1="0" y1="165" x2="560" y2="165" stroke="#24404E" stroke-width="1"/>
-          <path class="trail-path" d="M40,150 L120,90 L210,130 L300,60 L390,100 L480,50 L520,80"
-                fill="none" stroke="#6FCF97" stroke-width="1.6" stroke-dasharray="4 4" opacity="0.55"/>
-          <g class="trail-duck">
-            <animateMotion dur="7s" repeatCount="indefinite"
-              path="M40,150 L120,90 L210,130 L300,60 L390,100 L480,50 L520,80" />
-            <circle r="9" fill="#152834" stroke="#FFB454" stroke-width="1.5"/>
-            <path d="M-4,0 Q0,-5 5,-1" stroke="#FFB454" stroke-width="1.4" fill="none" stroke-linecap="round"/>
-            <circle cx="2" cy="-1.5" r="1" fill="#FFB454"/>
-          </g>
-        </svg>
-        <div class="trail-readout">
-          <span>DUCK #04 · TRAIL LOG</span>
-          <span class="v">CHARGE 82%</span>
+          <div class="spec-row">
+            <div class="spec-item">
+              <span class="k">Ticker</span>
+              <span class="v">$EDUCK</span>
+            </div>
+            <div class="spec-item">
+              <span class="k">Network</span>
+              <span class="v">Ethereum</span>
+            </div>
+            <div class="spec-item">
+              <span class="k">Runs on</span>
+              <span class="v">Every swap</span>
+            </div>
+          </div>
         </div>
+
+        <div class="coin-stage">
+          <div class="coin-wrap">
+            <div class="coin-shadow"></div>
+            <div class="coin-edge">
+              <div class="coin-face">
+                <img src="https://pbs.twimg.com/profile_images/2094470799960752128/TFIA0P6X_400x400.jpg" alt="etherDuck coin — sculptural duck mark">
+                <div class="coin-tint"></div>
+              </div>
+            </div>
+          </div>
+          <div class="coin-caption">
+            <span>Fig. 1 — struck</span>
+            <span>edition: 555,000,000</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="concept">
+    <div class="wrap">
+      <p class="kicker">The concept</p>
+      <h2>Most tokens just move. This one does something.</h2>
+      <div class="spec-table-wrap" style="align-items: start;">
+        <p class="lede" style="margin: 0;">
+          A normal token transfer is a number changing hands — nothing about the token
+          itself does anything when it moves. etherDuck asks what happens if a swap
+          were also an instruction: something small, physical-feeling, and stateful,
+          that the trade actually pushes forward.
+        </p>
+        <p class="lede" style="margin: 0;">
+          That's the fleet. Each MicroDuck has a status, a battery, and a trail of
+          where it's been — all of it stored and updated onchain, all of it driven
+          by whatever's already happening in the $EDUCK pool. Nobody runs a bot to
+          keep the fleet moving. There's no off-chain scheduler deciding when a duck
+          gets its next order. The hook sees the swap and acts inside the same
+          transaction, so the fleet's state is exactly as current as the chain itself.
+        </p>
       </div>
     </div>
   </section>
 
   <section id="how">
     <div class="wrap">
-      <p class="section-label">FLIGHT LOG</p>
-      <h2>What actually happens when someone trades $QUACK</h2>
+      <p class="kicker">Provenance</p>
+      <h2>What a single swap sets in motion</h2>
+      <p class="lede">No off-chain job runs any of this — every step happens inside the hook, in the same transaction as the trade.</p>
 
-      <div class="log-entry" data-entry="001">
-        <h3>The hook picks up the trade</h3>
-        <p>etherDuck's hook attaches to the $QUACK pool on Uniswap v4. It doesn't sit beside the pool watching from a distance — it runs inside the swap itself, the moment a trade settles.</p>
+      <div class="flow-strip">
+        <div class="flow-node">
+          <div class="fn-label">Swap</div>
+          <div class="fn-sub">settles on Uniswap v4</div>
+        </div>
+        <div class="flow-arrow">&#8250;</div>
+        <div class="flow-node">
+          <div class="fn-label">Duck</div>
+          <div class="fn-sub">picked in rotation</div>
+        </div>
+        <div class="flow-arrow">&#8250;</div>
+        <div class="flow-node">
+          <div class="fn-label">Charge</div>
+          <div class="fn-sub">spent by trade size</div>
+        </div>
+        <div class="flow-arrow">&#8250;</div>
+        <div class="flow-node">
+          <div class="fn-label">Trail</div>
+          <div class="fn-sub">extended onchain</div>
+        </div>
       </div>
 
-      <div class="log-entry" data-entry="002">
-        <h3>A duck gets the order</h3>
-        <p>The hook rotates through the registered fleet and issues the next duck a command sized off the trade. No duck sits idle forever while the swap volume goes elsewhere.</p>
-      </div>
-
-      <div class="log-entry" data-entry="003">
-        <h3>The battery pays for it</h3>
-        <p>Executing that command drains the duck's charge by the trade's size. Charge also trickles back on its own over time, whether or not the duck is doing anything — the two forces run against each other continuously.</p>
-      </div>
-
-      <div class="log-entry" data-entry="004">
-        <h3>The step gets logged</h3>
-        <p>A new coordinate lands on the duck's trail, with the straight-line distance from its last position calculated and added to a running odometer. Every duck's whole path is readable onchain, waypoint by waypoint.</p>
+      <div class="provenance">
+        <div class="prov-entry">
+          <span class="prov-num">01</span>
+          <div>
+            <h3>Swap lands</h3>
+            <p>A trade against the $EDUCK pool settles on Uniswap v4.</p>
+          </div>
+        </div>
+        <div class="prov-entry">
+          <span class="prov-num">02</span>
+          <div>
+            <h3>A duck is called</h3>
+            <p>The hook rotates through the registered fleet — no duck sits idle while volume goes elsewhere.</p>
+          </div>
+        </div>
+        <div class="prov-entry">
+          <span class="prov-num">03</span>
+          <div>
+            <h3>Its charge is spent</h3>
+            <p>Battery falls by the size of the trade, floored at zero. It also trickles back on its own, second by second.</p>
+          </div>
+        </div>
+        <div class="prov-entry">
+          <span class="prov-num">04</span>
+          <div>
+            <h3>The trail extends</h3>
+            <p>A new coordinate is recorded, with the distance from its last position computed and added to a running total.</p>
+          </div>
+        </div>
       </div>
     </div>
   </section>
 
   <section id="fleet">
     <div class="wrap">
-      <p class="section-label">FLEET SYSTEMS</p>
-      <h2>Four contracts, four jobs, no human in the loop</h2>
-      <p>Each of etherDuck's supporting systems does exactly one thing for the fleet. None of them touch $QUACK's balances directly — they're mapped alongside the token, not built into it.</p>
+      <p class="kicker">Specimens</p>
+      <h2>Four contracts, one duty each</h2>
+      <p class="lede">None of them touch $EDUCK's balances directly — they're wired to the hook, not the token.</p>
 
-      <div class="panel-grid">
-        <div class="panel">
-          <div class="panel-id">SYS · 01</div>
-          <h3>Fleet Roster</h3>
-          <p>Registers every MicroDuck and tracks its status — idle, active, charging, offline, or retired for good.</p>
+      <div class="specimen-grid">
+        <div class="specimen">
+          <span class="tag">Sys. 01</span>
+          <h3>Fleet roster</h3>
+          <p>Registers every duck and tracks whether it's idle, active, charging, or retired for good.</p>
         </div>
-        <div class="panel">
-          <div class="panel-id">SYS · 02</div>
-          <h3>Command Dispatch</h3>
-          <p>A first-in-first-out order queue per duck. Commands land at the back and execute strictly in the order they arrived.</p>
+        <div class="specimen">
+          <span class="tag">Sys. 02</span>
+          <h3>Command dispatch</h3>
+          <p>A first-in-first-out order queue, one per duck, executed strictly in the order it arrived.</p>
         </div>
-        <div class="panel">
-          <div class="panel-id">SYS · 03</div>
-          <h3>Battery Sim</h3>
-          <p>Charge drains per action and recharges per second, floored at zero and capped at capacity — never runs negative, never overflows.</p>
+        <div class="specimen">
+          <span class="tag">Sys. 03</span>
+          <h3>Battery sim</h3>
+          <p>Charge drains per action and recharges per second — never negative, never past capacity.</p>
         </div>
-        <div class="panel">
-          <div class="panel-id">SYS · 04</div>
-          <h3>Waypoint Trail</h3>
-          <p>Every step is a signed (x, y) coordinate. Distance between steps and total distance traveled are both computed onchain.</p>
+        <div class="specimen">
+          <span class="tag">Sys. 04</span>
+          <h3>Waypoint trail</h3>
+          <p>Every step is a signed coordinate, distance computed onchain, waypoint by waypoint.</p>
         </div>
       </div>
     </div>
@@ -503,22 +539,38 @@
 
   <section id="token">
     <div class="wrap">
-      <p class="section-label">$QUACK</p>
-      <h2>A fixed-supply currency with nobody holding the keys</h2>
-      <p>$QUACK has no mint function and no owner. The entire supply was set once at deployment, and it only ever moves in one direction — down, through a plain public burn.</p>
+      <p class="kicker">Specification</p>
+      <h2>Cast once, unsigned</h2>
+      <p class="lede">Nobody holds a key that can mint more $EDUCK. The supply was fixed at deployment and only moves in one direction, through a plain public burn.</p>
 
-      <div class="facts">
-        <div class="fact">
-          <span class="num">555M</span>
-          <span class="lbl">genesis supply</span>
+      <div class="spec-table-wrap">
+        <div class="spec-table">
+          <div class="spec-table-row">
+            <span class="k">Medium</span>
+            <span class="v">Fixed-supply ERC-20</span>
+          </div>
+          <div class="spec-table-row">
+            <span class="k">Edition size</span>
+            <span class="v">555,000,000</span>
+          </div>
+          <div class="spec-table-row">
+            <span class="k">Network</span>
+            <span class="v">Ethereum</span>
+          </div>
+          <div class="spec-table-row">
+            <span class="k">Only ever moves</span>
+            <span class="v">Downward, via burn</span>
+          </div>
         </div>
-        <div class="fact">
-          <span class="num">0</span>
-          <span class="lbl">mint functions</span>
-        </div>
-        <div class="fact">
-          <span class="num">Ethereum</span>
-          <span class="lbl">network</span>
+
+        <div class="integrity-note">
+          <h3>Why this matters</h3>
+          <p>
+            A token with a mint function is a promise that depends on whoever holds the key.
+            $EDUCK doesn't ask for that trust — the supply printed at deployment is the only
+            supply that will ever exist. What you see in the specification is the whole contract,
+            not a summary of it.
+          </p>
         </div>
       </div>
     </div>
@@ -528,15 +580,18 @@
 <footer>
   <div class="wrap">
     <div class="footer-row">
-      <div class="brand mono">etherDuck</div>
+      <div class="brand" style="font-size: 15px;">
+        <span class="brand-coin"><img src="https://pbs.twimg.com/profile_images/2094470799960752128/TFIA0P6X_400x400.jpg" alt=""></span>
+        etherDuck
+      </div>
       <div class="footer-links">
-        <a href="https://x.com/etherduck_eth" target="_blank" rel="noopener">X / Twitter</a>
-        <a href="#how">Flight log</a>
-        <a href="#fleet">Fleet systems</a>
+        <a href="https://x.com/etherduck" target="_blank" rel="noopener">X / Twitter</a>
+        <a href="#how">Provenance</a>
+        <a href="#fleet">Specimens</a>
       </div>
     </div>
     <p class="footer-note">
-      etherDuck is an experimental onchain agent. $QUACK carries no financial promises, and nothing on this page is investment advice. Read the contracts before you trust them with anything.
+      etherDuck is experimental. $EDUCK isn't an investment and this page isn't advice — read the contracts yourself before you trust them with anything.
     </p>
   </div>
 </footer>
